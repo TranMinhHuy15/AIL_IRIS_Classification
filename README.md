@@ -6,7 +6,7 @@
 
 Giảng viên có thể mở và chạy ứng dụng trực tiếp tại: **https://se203499-iris-classification.streamlit.app/**.
 
-Không cần tải ZIP hay cài Python để xem demo. Nếu app ngủ do không có lượt truy cập, mở link và chờ Streamlit khởi động lại.
+
 
 ## Chạy trên máy tính
 
