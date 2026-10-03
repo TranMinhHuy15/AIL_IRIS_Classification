@@ -1,3 +1,4 @@
+# Các thư viện dùng để xử lý dữ liệu, huấn luyện mô hình, vẽ biểu đồ và dựng giao diện.
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -18,7 +19,8 @@ st.set_page_config(
 
 @st.cache_resource(show_spinner="Đang tải dữ liệu và huấn luyện Gaussian Naive Bayes...")
 def load_model_bundle():
-    """Đo accuracy holdout rồi huấn luyện mô hình cuối trên toàn bộ Iris."""
+    """Đánh giá holdout, sau đó huấn luyện mô hình cuối trên toàn bộ Iris."""
+    # Tách tập 80/20 để báo cáo accuracy theo đúng yêu cầu bài lab.
     iris = load_iris()
     X_train, X_test, y_train, y_test = train_test_split(
         iris.data,
@@ -31,6 +33,7 @@ def load_model_bundle():
     evaluation_model.fit(X_train, y_train)
     accuracy = accuracy_score(y_test, evaluation_model.predict(X_test))
 
+    # Huấn luyện mô hình dùng cho dự đoán cuối cùng trên toàn bộ 150 mẫu.
     model = GaussianNB()
     model.fit(iris.data, iris.target)
     return iris, model, float(accuracy)
@@ -38,6 +41,7 @@ def load_model_bundle():
 
 @st.cache_data
 def load_iris_frame():
+    # Tạo bảng dữ liệu có tên loài để hiển thị trong tab Dữ liệu Iris.
     iris = load_iris()
     frame = pd.DataFrame(iris.data, columns=iris.feature_names)
     frame["Loài hoa"] = [iris.target_names[target].capitalize() for target in iris.target]
@@ -45,6 +49,7 @@ def load_iris_frame():
 
 
 def predict_iris(model, values):
+    # Chuyển bốn giá trị đầu vào thành đúng định dạng mà scikit-learn yêu cầu.
     input_data = np.asarray(values, dtype=float).reshape(1, -1)
     predicted_class = int(model.predict(input_data)[0])
     probabilities = model.predict_proba(input_data)[0]
@@ -52,6 +57,7 @@ def predict_iris(model, values):
 
 
 def show_probability_bars(target_names, probabilities):
+    # Hiển thị xác suất của cả ba lớp dưới dạng thanh tiến trình.
     st.markdown("#### Xác suất từng loài")
     for index, probability in enumerate(probabilities):
         st.write(f"**{target_names[index].capitalize()}** — {probability:.2%}")
@@ -59,6 +65,7 @@ def show_probability_bars(target_names, probabilities):
 
 
 def show_petal_chart(frame, features, target_names):
+    # Vẽ dữ liệu Petal Length/Petal Width và đánh dấu điểm người dùng nhập.
     fig, ax = plt.subplots(figsize=(8, 5))
     palette = ["#2E7D32", "#1976D2", "#D84315"]
     for index, species in enumerate(target_names):
@@ -92,11 +99,13 @@ def show_petal_chart(frame, features, target_names):
     plt.close(fig)
 
 
+# Tải dữ liệu và mô hình đã cache; thao tác với slider không huấn luyện lại mô hình.
 iris, model, test_accuracy = load_model_bundle()
 iris_frame = load_iris_frame()
 plot_frame = iris_frame.copy()
 plot_frame["target"] = iris.target
 
+# Sidebar tóm tắt thuật toán, dữ liệu và kết quả đánh giá trên tập Test.
 with st.sidebar:
     st.header("Thông tin mô hình")
     st.write("**Thuật toán:** Gaussian Naive Bayes")
@@ -109,6 +118,7 @@ st.title("Demo Phân Loại Hoa Iris Dataset")
 st.subheader("Mô hình: Gaussian Naive Bayes")
 st.write("Điều chỉnh bốn thông số hoa, sau đó chọn **Dự đoán ngay** để xem kết quả.")
 
+# Tab chính có bố cục hai cột; tab còn lại trình bày bảng dữ liệu gốc.
 demo_tab, data_tab = st.tabs(["Dự đoán", "Dữ liệu Iris"])
 
 with demo_tab:
@@ -135,6 +145,7 @@ with demo_tab:
             submitted = st.form_submit_button("Dự đoán ngay", width="stretch")
 
         if submitted:
+            # Ghi nhớ bộ thông số đã gửi để các lần chạy lại vẫn giữ kết quả.
             st.session_state["iris_last_input"] = [
                 sepal_length, sepal_width, petal_length, petal_width,
             ]
@@ -145,11 +156,13 @@ with demo_tab:
         if last_input is None:
             st.info("Kết quả sẽ hiển thị sau khi bạn bấm **Dự đoán ngay**.")
         else:
+            # Chỉ dự đoán và trình bày kết quả sau khi người dùng bấm nút.
             predicted_class, probabilities = predict_iris(model, last_input)
             predicted_species = iris.target_names[predicted_class]
             st.success(f"Loài hoa được dự đoán: **{predicted_species.upper()}**")
             show_probability_bars(iris.target_names, probabilities)
 
+            # Nếu thiếu ảnh, hiện cảnh báo để ứng dụng tiếp tục chạy bình thường.
             image_path = Path(__file__).resolve().parent / "assets" / f"{predicted_species}.jpg"
             if image_path.is_file():
                 st.image(
